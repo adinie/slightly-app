@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slightly</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Slightly app demo: the app on its own. Fills the viewport on a phone-sized frame, sits centred at phone size on larger screens. */
+@property --range { syntax: '<angle>'; inherits: true; initial-value: 360deg; }
+:root {
+  --stage: #F0F1F2;
+  --signal: #D93A26;
+  --ink: #111318;
+  --app-muted: #5C5F66;
+  --app-line: #E4E5E7;
+  --display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --body: 'Instrument Sans', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --stage: #111214; }
+}
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; display: grid; place-items: center; background: var(--stage); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+*, *::before, *::after { box-sizing: border-box; }
+button, input { font: inherit; color: inherit; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- frame ---------- */
+.phone { width: 100%; height: 100%; }
+@media (min-width: 561px) and (min-height: 520px) {
+  .phone { width: auto; max-width: 100%; height: min(844px, calc(100vh - 48px)); height: min(844px, calc(100dvh - 48px)); aspect-ratio: 390 / 844; border-radius: 44px; box-shadow: 0 30px 70px rgba(10, 12, 18, .2); }
+  .screen { border-radius: 44px; }
+}
+.screen { --u: 1; --ms: 1.06; --tint: #FCFCFC; --blob: var(--signal); --range: 360deg; position: relative; width: 100%; height: 100%; overflow: hidden; overflow: clip; background: var(--tint); color: var(--ink); color-scheme: light; transition: background .8s ease, --range .7s ease; isolation: isolate; }
+.screen[data-state="passive"] { --ms: 1; --range: 180deg; }
+.screen[data-state="ghost"] { --ms: .92; --tint: #EFEFF1; --blob: #70757F; --range: 0deg; }
+.screen :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.goo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.goo g { fill: var(--blob); transition: fill .8s ease; }
+.field { position: absolute; inset: 0; }
+.b { position: absolute; left: 0; top: 0; border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-family: var(--display); line-height: 1; -webkit-tap-highlight-color: transparent; will-change: transform; }
+.b b { font-weight: 700; font-size: clamp(12px, calc(var(--rr, 20) * .44px), 24px); letter-spacing: -.02em; }
+.b small { display: none; font-family: var(--body); font-weight: 500; font-size: 10.5px; letter-spacing: .01em; opacity: .92; font-variant-numeric: tabular-nums; }
+.b.big small { display: block; }
+.b.unread b::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 3px; border-radius: 50%; background: #FFFFFF; vertical-align: .55em; }
+.b:hover, .b.sel { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .9); }
+
+.me { position: absolute; left: 50%; top: 50%; width: calc(84px * var(--u) * var(--ms)); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: conic-gradient(from 20deg, #F8F9FA, #D3D6DB, #FAFAFB, #CBCFD5, #F3F4F6, #D5D8DD, #F8F9FA); box-shadow: 0 12px 28px rgba(17, 19, 24, .2), inset 0 0 0 1px rgba(255, 255, 255, .8), 0 0 0 7px var(--tint); transition: width .6s cubic-bezier(.3, 1.4, .5, 1), box-shadow .8s ease; -webkit-tap-highlight-color: transparent; z-index: 2; }
+.me::before { content: ""; position: absolute; inset: -12px; border-radius: 50%; background: conic-gradient(from -90deg, var(--signal) 0 var(--range), rgba(17, 19, 24, .16) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 5px)); }
+.me.pulse-soft::before { animation: soft 1.2s ease 3; }
+.me.pulse-blink::before { animation: blink .9s steps(1) 2; }
+@keyframes soft { 50% { opacity: .25; } }
+@keyframes blink { 0%, 30%, 60% { opacity: .1; } 15%, 45%, 100% { opacity: 1; } }
+.ripple { position: absolute; left: 50%; top: 50%; width: calc(84px * var(--u)); aspect-ratio: 1; margin: calc(-42px * var(--u)) 0 0 calc(-42px * var(--u)); border-radius: 50%; border: 3px solid var(--signal); pointer-events: none; animation: ripple 1.8s ease-out forwards; z-index: 1; }
+@keyframes ripple { from { scale: 1; opacity: .9; } to { scale: 3.8; opacity: 0; } }
+
+.round { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--app-line); background: #FFFFFF; color: var(--ink); box-shadow: 0 4px 14px rgba(17, 19, 24, .08); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.round svg, .compose svg, .composer svg, .x svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.top { position: absolute; left: 0; right: 0; top: 0; padding: 22px 20px 0; display: flex; justify-content: space-between; align-items: flex-start; z-index: 3; pointer-events: none; }
+.top > * { pointer-events: auto; }
+.menu { margin-left: auto; display: flex; align-items: center; gap: 10px; pointer-events: none; }
+.menu > * { pointer-events: auto; }
+.top.summary .menu { display: none; }
+.menu-items { display: flex; gap: 10px; visibility: hidden; pointer-events: none; transition: visibility 0s .5s; }
+.menu-items .round { translate: calc(var(--i) * 56px) 0; scale: .6; opacity: 0; transition: translate .4s cubic-bezier(.4, 0, .2, 1), scale .4s cubic-bezier(.4, 0, .2, 1), opacity .25s ease; transition-delay: calc((3 - var(--i)) * 45ms); }
+.menu.open .menu-items { visibility: visible; pointer-events: auto; transition: visibility 0s; }
+.menu.open .menu-items .round { translate: 0 0; scale: 1; opacity: 1; transition: translate .5s cubic-bezier(.3, 1.3, .5, 1), scale .5s cubic-bezier(.3, 1.3, .5, 1), opacity .25s ease; transition-delay: calc((var(--i) - 1) * 55ms); }
+#menuBtn { position: relative; z-index: 1; }
+#menuBtn svg { transition: rotate .35s ease, opacity .2s ease; }
+#menuBtn .ic-close { position: absolute; inset: 0; margin: auto; opacity: 0; rotate: -90deg; }
+.menu.open #menuBtn .ic-open { opacity: 0; rotate: 90deg; }
+.menu.open #menuBtn .ic-close { opacity: 1; rotate: 0deg; }
+.pill { min-height: 46px; padding: 0 16px 0 20px; border-radius: 23px; border: 0; background: var(--ink); color: #FFFFFF; font-family: var(--display); font-size: 15px; font-weight: 600; white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; animation: pillin .35s ease both; }
+.pill span { opacity: .7; }
+@keyframes pillin { from { opacity: 0; translate: -8px 0; } }
+.toast { position: absolute; left: 50%; top: 84px; translate: -50% 0; max-width: calc(100% - 40px); padding: 9px 16px; border-radius: 20px; background: var(--ink); color: #FFFFFF; font-size: 14px; font-weight: 500; white-space: nowrap; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .3s, translate .3s; }
+.toast.on { opacity: 1; translate: -50% 4px; }
+.push { position: absolute; left: 14px; right: 14px; top: 14px; padding: 14px 16px; border-radius: 22px; border: 0; text-align: left; background: #FFFFFF; color: var(--ink); box-shadow: 0 10px 30px rgba(17, 19, 24, .2); display: flex; gap: 12px; align-items: center; cursor: pointer; z-index: 6; translate: 0 -140%; transition: translate .5s cubic-bezier(.3, 1.2, .5, 1); font-size: 14px; line-height: 1.35; }
+.push.on { translate: 0 0; }
+.push i { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--signal); }
+.push b { display: block; font-family: var(--display); font-weight: 700; color: var(--ink); }
+.push span { color: var(--app-muted); }
+
+.hint { position: absolute; left: 0; right: 0; bottom: 124px; text-align: center; font-size: 14px; color: var(--app-muted); margin: 0; padding: 0 24px; transition: opacity .5s; pointer-events: none; z-index: 2; }
+.hint.off { opacity: 0; }
+.bottom { position: absolute; left: 0; right: 0; bottom: 34px; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 3; pointer-events: none; padding: 0 20px; }
+.bottom > * { pointer-events: auto; }
+.mychip { max-width: 100%; min-height: 44px; padding: 0 20px; border-radius: 22px; border: 0; background: var(--ink); color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer; box-shadow: 0 10px 24px rgba(17, 19, 24, .22); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compose { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--ink); color: #FFFFFF; display: grid; place-items: center; cursor: pointer; box-shadow: 0 10px 24px rgba(17, 19, 24, .28); padding: 0; }
+.compose svg { width: 24px; height: 24px; }
+.composer { width: 100%; max-width: 300px; height: 56px; padding: 0 8px 0 20px; border-radius: 28px; background: #FFFFFF; border: 1px solid var(--app-line); box-shadow: 0 14px 34px rgba(17, 19, 24, .2); display: flex; align-items: center; gap: 8px; }
+.composer input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 16px; color: var(--ink); }
+.composer input::placeholder { color: #767980; }
+.composer button { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--ink); color: #FFFFFF; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.composer button svg { width: 18px; height: 18px; }
+
+.dim { position: absolute; inset: 0; background: rgba(17, 19, 24, .4); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 7; border: 0; padding: 0; }
+.dim.on { opacity: 1; pointer-events: auto; }
+.card { position: absolute; left: 16px; right: 16px; top: 50%; translate: 0 -40%; padding: 28px 56px 24px 28px; border-radius: 30px; background: var(--signal); color: #FFFFFF; z-index: 8; opacity: 0; pointer-events: none; transition: opacity .3s, translate .4s cubic-bezier(.3, 1.2, .5, 1); box-shadow: 0 20px 50px rgba(17, 19, 24, .3); }
+.card.on { opacity: 1; translate: 0 -50%; pointer-events: auto; }
+.card p { margin: 0; }
+.card .words { font-family: var(--display); font-size: 24px; line-height: 1.12; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+.card .meta { margin-top: 14px; font-size: 14px; }
+.card .x { color: #FFFFFF; }
+.card :focus-visible { outline-color: #FFFFFF; }
+.x { position: absolute; right: 8px; top: 8px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.x svg { width: 18px; height: 18px; }
+
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 84%; display: flex; flex-direction: column; background: #FFFFFF; color: var(--ink); border-radius: 32px 32px 0 0; z-index: 9; translate: 0 104%; visibility: hidden; transition: translate .45s cubic-bezier(.3, 1.1, .5, 1), visibility 0s .45s; box-shadow: 0 -10px 40px rgba(17, 19, 24, .18); }
+.sheet.on { translate: 0 0; visibility: visible; transition: translate .45s cubic-bezier(.3, 1.1, .5, 1); }
+.sheet header { position: relative; padding: 28px 64px 10px 26px; }
+.sheet h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; letter-spacing: -.035em; }
+.sheet .body { overflow-y: auto; padding: 8px 26px 34px; display: flex; flex-direction: column; gap: 18px; overscroll-behavior: contain; }
+.sheet .sub { margin: 0; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--app-muted); }
+.tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tl button { width: 100%; display: grid; grid-template-columns: 46px 24px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border: 0; border-top: 1px solid var(--app-line); background: none; text-align: left; cursor: pointer; color: var(--ink); }
+.tl li:first-child button { border-top: 0; }
+.tl time { font-size: 14px; color: var(--app-muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.tl i { width: 20px; height: 20px; border-radius: 50%; background: var(--signal); margin-top: 2px; }
+.tl i.pass { background: none; border: 3px solid var(--signal); }
+.tl i.ghost { background: none; border: 2px dashed #8B8E96; }
+.tl b { display: block; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -.01em; color: var(--ink); }
+.tl span { display: block; font-size: 14px; color: var(--app-muted); text-wrap: pretty; }
+.reflect { margin: 0; font-family: var(--display); font-size: 24px; line-height: 1.12; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+.soft { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; color: var(--app-muted); }
+.soft b { color: var(--ink); font-weight: 600; }
+.dots { display: flex; flex-wrap: wrap; align-items: center; min-height: 44px; padding-left: 5px; row-gap: 4px; }
+.dots i { border-radius: 50%; background: var(--signal); margin-left: -5px; }
+.field-row { display: flex; flex-direction: column; gap: 8px; }
+.field-row label { font-size: 15px; font-weight: 600; }
+.field-row input { height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid #C4C6CB; background: #FFFFFF; font-size: 16px; color: var(--ink); }
+.set { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.set legend { padding: 0; margin-bottom: 10px; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--app-muted); }
+.opt { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--app-line); cursor: pointer; }
+.opt input, .seg input, .sw input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.opt:has(input:checked) { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink) inset; }
+.opt:has(input:focus-visible), .seg label:has(input:focus-visible), .sw label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 3px; }
+.opt i { width: 30px; height: 30px; border-radius: 50%; background: conic-gradient(from -90deg, var(--signal) 0 var(--r), #D3D5D9 0); display: grid; place-items: center; }
+.opt i::after { content: ""; width: 20px; height: 20px; border-radius: 50%; background: #F1F2F3; }
+.opt b { display: block; font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--ink); }
+.opt span { display: block; font-size: 14px; color: var(--app-muted); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 18px; background: #EEEFF1; }
+.seg label { position: relative; min-height: 44px; display: grid; place-items: center; border-radius: 14px; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; padding: 0 4px; }
+.seg label:has(input:checked) { background: #FFFFFF; box-shadow: 0 1px 4px rgba(17, 19, 24, .16); font-weight: 600; }
+.sw { display: flex; gap: 12px; }
+.sw label { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--c); cursor: pointer; }
+.sw label:has(input:checked) { box-shadow: 0 0 0 3px #FFFFFF, 0 0 0 5px var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .me::before, .pill { animation: none !important; }
+  .ripple { animation-duration: .01s; }
+  .sheet, .card, .push, .screen, .me, .menu-items, .menu-items .round, #menuBtn svg { transition-duration: .01s !important; transition-delay: 0s !important; }
+}
+</style>
+</head>
+<body>
+<main class="phone">
+    <div class="screen" id="screen" data-state="active">
+      <svg class="goo" id="goo" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="gooF" filterUnits="userSpaceOnUse" x="-60" y="-60" width="600" height="1100" color-interpolation-filters="sRGB">
+            <feGaussianBlur id="gooBlur" in="SourceGraphic" stdDeviation="10"/>
+            <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"/>
+          </filter>
+        </defs>
+        <g id="blobs" filter="url(#gooF)"></g>
+      </svg>
+      <div class="field" id="field"></div>
+      <button class="me" id="me" type="button" aria-label="Your state: Active. Tap to change."></button>
+
+      <div class="top" id="top">
+        <button class="pill" id="pill" type="button" hidden></button>
+        <div class="menu" id="menu">
+          <div class="menu-items" id="menuItems" inert>
+            <button class="round" id="smile" type="button" style="--i: 3" aria-label="Look back on today">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5v.5M15 9.5v.5"/></svg>
+            </button>
+            <button class="round" id="openTimeline" type="button" style="--i: 2" aria-label="Timeline of encounters">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h11M9 12h11M9 17h11"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>
+            </button>
+            <button class="round" id="openButton" type="button" style="--i: 1" aria-label="Your button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 3v2.5"/></svg>
+            </button>
+          </div>
+          <button class="round" id="menuBtn" type="button" aria-expanded="false" aria-controls="menuItems" aria-label="Open menu">
+            <svg class="ic-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01" style="stroke-width: 2.8"/></svg>
+            <svg class="ic-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+      <button class="push" id="push" type="button" tabindex="-1"><i></i><span><b>A moment from earlier</b><span id="pushText"></span></span></button>
+
+      <p class="hint" id="hint">Tap a circle · tap the centre</p>
+      <div class="bottom">
+        <button class="mychip" id="mychip" type="button" hidden></button>
+        <button class="compose" id="compose" type="button" aria-label="Write your message">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4.3A8 8 0 1 1 20.5 11.5z"/></svg>
+        </button>
+        <form class="composer" id="composer" autocomplete="off" hidden>
+          <label class="vh" for="msg">Your message for people you meet</label>
+          <input id="msg" name="msg" type="text" maxlength="60" placeholder="Type your message…" enterkeyhint="send">
+          <button type="submit" aria-label="Save message">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5 21 3z"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <button class="dim" id="dim" type="button" tabindex="-1" aria-label="Close"></button>
+
+      <div class="card" id="card" role="dialog" aria-modal="true" aria-labelledby="cardWords" inert>
+        <p class="words" id="cardWords"></p>
+        <p class="meta" id="cardMeta"></p>
+        <button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+
+      <section class="sheet" id="sheetTimeline" role="dialog" aria-modal="true" aria-labelledby="tlTitle" inert>
+        <header><h2 id="tlTitle">Encounters</h2><button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+        <div class="body" id="tlBody"></div>
+      </section>
+
+      <section class="sheet" id="sheetReflect" role="dialog" aria-modal="true" aria-labelledby="rfTitle" inert>
+        <header><h2 id="rfTitle">Looking back</h2><button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+        <div class="body">
+          <p class="reflect" id="rfLead"></p>
+          <div class="dots" id="rfDots" aria-hidden="true"></div>
+          <ul class="soft" id="rfList"></ul>
+          <div class="field-row">
+            <label for="note">A line for yourself</label>
+            <input id="note" type="text" maxlength="90" placeholder="What stayed with you today?">
+          </div>
+        </div>
+      </section>
+
+      <section class="sheet" id="sheetButton" role="dialog" aria-modal="true" aria-labelledby="btTitle" inert>
+        <header><h2 id="btTitle">Your button</h2><button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+        <div class="body">
+          <fieldset class="set">
+            <legend>State</legend>
+            <label class="opt" style="--r: 360deg"><input type="radio" name="st" id="st-active" value="active" checked><i></i><span><b>Active</b><span>Sends a subtle signal and records encounters.</span></span></label>
+            <label class="opt" style="--r: 180deg"><input type="radio" name="st" id="st-passive" value="passive"><i></i><span><b>Passive</b><span>No signal. Encounters are still recorded.</span></span></label>
+            <label class="opt" style="--r: 0deg"><input type="radio" name="st" id="st-ghost" value="ghost"><i></i><span><b>Ghost mode</b><span>Light off. You notice others, nobody records you.</span></span></label>
+          </fieldset>
+          <fieldset class="set">
+            <legend>Light signal</legend>
+            <div class="seg">
+              <label><input type="radio" name="lt" id="lt-soft" value="soft" checked>Soft pulse</label>
+              <label><input type="radio" name="lt" id="lt-blink" value="blink">Double blink</label>
+              <label><input type="radio" name="lt" id="lt-steady" value="steady">Steady</label>
+            </div>
+            <div class="sw">
+              <label style="--c: #D93A26"><input type="radio" name="lc" id="lc-signal" value="#D93A26" checked><span class="vh">Signal red</span></label>
+              <label style="--c: #2447E0"><input type="radio" name="lc" id="lc-cobalt" value="#2447E0"><span class="vh">Cobalt</span></label>
+              <label style="--c: #7B3FD6"><input type="radio" name="lc" id="lc-violet" value="#7B3FD6"><span class="vh">Violet</span></label>
+              <label style="--c: #0E7F5B"><input type="radio" name="lc" id="lc-pine" value="#0E7F5B"><span class="vh">Pine</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="set">
+            <legend>Starts the day in</legend>
+            <div class="seg">
+              <label><input type="radio" name="df" id="df-active" value="active" checked>Active</label>
+              <label><input type="radio" name="df" id="df-passive" value="passive">Passive</label>
+              <label><input type="radio" name="df" id="df-ghost" value="ghost">Ghost</label>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+    </div>
+
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const POOL = ['Hope your day gets even better', 'Look up, the sky is pink tonight', 'Be kind to yourself today', 'Hello from the 8:15 train', 'Almost weekend', 'Good luck with whatever today is', 'You are not the only one out here', 'Take the long way home'];
+  const NAMES = { active: 'Active', passive: 'Passive', ghost: 'Ghost mode' };
+  const TOAST = { active: 'Active · signal and record', passive: 'Passive · record only', ghost: 'Ghost mode · invisible' };
+  const ORDER = ['active', 'passive', 'ghost'];
+  const AMP = { active: 1, passive: .5, ghost: .12 };
+  const CX = 195, CY = 422, CORE = 60;
+
+  const screen = $('#screen'), field = $('#field'), blobs = $('#blobs'), meEl = $('#me');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const me = { state: 'active', message: '', light: 'soft', def: 'active' };
+  let people = [], events = [], clock = 0, uid = 0, autoTimer = 0, pushTimer = 0, pillTimer = 0, toastTimer = 0, openEl = null, lastFocus = null;
+  let W = 390, H = 844, U = 1, ampCur = 1;
+
+  const fmt = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  const radius = c => 12 + 7.5 * Math.min(c, 7);
+  const byId = id => people.find(p => p.id === id);
+
+  function person(x, y, count, msg, isNew) {
+    return { id: ++uid, x, y, count, msg: msg || '', isNew: !!isNew, unread: false, last: null, lastKind: 'pass', r: 0, v: 0, sel: false,
+      ax: rnd(6, 11), ay: rnd(6, 11), fx: rnd(.25, .5), fy: rnd(.25, .5), px: rnd(0, 6.3), py: rnd(0, 6.3), size: -1 };
+  }
+  function seed() {
+    uid = 0;
+    people = [
+      person(150, 250, 3, 'I saw the most beautiful flower today'),
+      person(207, 228, 1, "It's raining, so peaceful", true),
+      person(84, 282, 3, 'Just finished a really good book'),
+      person(84, 384, 1, '', true),
+      person(70, 330, 1),
+      person(255, 255, 2, "Hope you're having a wonderful day"),
+      person(346, 398, 1),
+      person(48, 452, 4),
+      person(78, 548, 5, 'You looked like you were having a good day'),
+      person(160, 610, 5),
+      person(322, 468, 5, 'First coffee outside this year'),
+      person(276, 524, 1, '', true),
+      person(250, 566, 1, '', true),
+      person(318, 330, 4, 'The light is so nice right now'),
+      person(338, 548, 1, '', true)
+    ];
+    const E = (day, min, pid, kind, got, sent) => ({ day, min, t: fmt(min), pid, kind, got: !!got, sent: !!sent });
+    events = [
+      E('today', 1053, 6, 'pass', true), E('today', 1041, 15, 'connect'), E('today', 785, 13, 'pass'), E('today', 778, 12, 'pass'),
+      E('today', 761, 11, 'connect', true), E('today', 542, 4, 'pass'), E('today', 514, 2, 'connect', true), E('today', 499, 10, 'pass'), E('today', 492, 1, 'connect', true),
+      E('Tue', 1090, 9, 'connect', true), E('Tue', 495, 8, 'pass'), E('Mon', 1142, 5, 'pass'), E('Mon', 1070, 14, 'connect', true),
+      E('Mon', 750, 7, 'pass'), E('Mon', 493, 3, 'connect', true)
+    ];
+    for (const e of [...events].reverse()) { const p = byId(e.pid); p.last = { day: e.day, t: e.t }; p.lastKind = e.kind; }
+    byId(2).unread = true; byId(6).unread = true;
+    clock = 1060;
+  }
+
+  /* ----- drawing ----- */
+  function mk(p, grow) {
+    const c = document.createElementNS(SVGNS, 'circle');
+    blobs.appendChild(c); p.c = c;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'b';
+    b.append(document.createElement('b'), document.createElement('small'));
+    b.addEventListener('click', () => openPerson(p.id, b));
+    field.appendChild(b); p.el = b;
+    p.r = grow ? 0 : radius(p.count); p.v = 0; p.size = -1;
+    paint(p);
+  }
+  function paint(p) {
+    p.el.firstChild.textContent = p.count;
+    p.el.lastChild.textContent = p.last ? (p.last.day === 'today' ? p.last.t : p.last.day) : '';
+    p.el.classList.toggle('unread', p.unread);
+    p.el.setAttribute('aria-label', `Someone you met ${p.count} ${p.count === 1 ? 'time' : 'times'}${p.msg ? ', left you a message' : ''}`);
+  }
+  function renderAll() { blobs.textContent = ''; field.textContent = ''; people.forEach(p => mk(p)); }
+
+  function relax() {
+    for (let i = 0; i < people.length; i++) {
+      const a = people[i], ra = radius(a.count);
+      for (let j = i + 1; j < people.length; j++) {
+        const b = people[j], rb = radius(b.count);
+        let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || .01;
+        const over = ra + rb + 5 - d;
+        if (over > 0) { const k = over * .03 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; }
+      }
+      let dx = a.x - CX, dy = a.y - CY, d = Math.hypot(dx, dy) || .01;
+      const over = CORE + ra + 8 - d;
+      if (over > 0) { a.x += dx / d * over * .06; a.y += dy / d * over * .06; }
+      a.x = Math.max(14, Math.min(376, a.x)); a.y = Math.max(140, Math.min(672, a.y));
+    }
+  }
+  function frame(now) {
+    const t = now / 1000;
+    ampCur += ((reduce.matches ? 0 : AMP[me.state]) - ampCur) * .04;
+    relax();
+    for (const p of people) {
+      const target = radius(p.count) * (p.sel ? 1.08 : 1);
+      p.v = (p.v + (target - p.r) * .09) * .8; p.r = Math.max(0, p.r + p.v);
+      const x = p.x + Math.sin(t * p.fx + p.px) * p.ax * ampCur, y = p.y + Math.cos(t * p.fy + p.py) * p.ay * ampCur;
+      const cx = W / 2 + (x - CX) * U, cy = H / 2 + (y - CY) * U, r = p.r * U;
+      p.c.setAttribute('cx', cx.toFixed(1)); p.c.setAttribute('cy', cy.toFixed(1)); p.c.setAttribute('r', r.toFixed(1));
+      p.el.style.transform = `translate(${(cx - r).toFixed(1)}px,${(cy - r).toFixed(1)}px)`;
+      if (Math.abs(r - p.size) > .3) {
+        p.size = r; p.el.style.width = p.el.style.height = (2 * r).toFixed(1) + 'px';
+        p.el.style.setProperty('--rr', r.toFixed(1)); p.el.classList.toggle('big', r >= 30);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  function fit() {
+    W = screen.clientWidth || 390; H = screen.clientHeight || 844; U = Math.min(W / 390, H / 844);
+    screen.style.setProperty('--u', U.toFixed(4));
+    $('#goo').setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const f = $('#gooF'); f.setAttribute('width', W + 120); f.setAttribute('height', H + 120);
+    $('#gooBlur').setAttribute('stdDeviation', (10 * U).toFixed(2));
+    people.forEach(p => { p.size = -1; });
+  }
+
+  /* ----- state ----- */
+  function setState(s, quiet) {
+    me.state = s;
+    screen.dataset.state = s;
+    meEl.setAttribute('aria-label', `Your state: ${NAMES[s]}. Tap to change.`);
+    $('#st-' + s).checked = true;
+    lightPulse();
+    if (!quiet) toast(TOAST[s]);
+  }
+  function lightPulse() {
+    meEl.classList.remove('pulse-soft', 'pulse-blink');
+    if (me.light === 'steady' || me.state === 'ghost') return;
+    void meEl.offsetWidth;
+    meEl.classList.add(me.light === 'blink' ? 'pulse-blink' : 'pulse-soft');
+  }
+  function toast(text) {
+    const t = $('#toast'); t.textContent = text; t.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 2400);
+  }
+  const nextState = () => setState(ORDER[(ORDER.indexOf(me.state) + 1) % 3]);
+
+  /* ----- overlays ----- */
+  function open(el, from) {
+    closeOverlay(true);
+    lastFocus = from || document.activeElement; openEl = el;
+    el.inert = false; el.classList.add('on'); $('#dim').classList.add('on');
+    hideHint();
+    const x = el.querySelector('[data-close]'); if (x) x.focus({ preventScroll: true });
+  }
+  function closeOverlay(silent) {
+    if (!openEl) return;
+    openEl.classList.remove('on'); openEl.inert = true; openEl = null;
+    $('#dim').classList.remove('on');
+    people.forEach(p => { p.sel = false; p.el.classList.remove('sel'); });
+    if (!silent && lastFocus && lastFocus.isConnected) lastFocus.focus({ preventScroll: true });
+  }
+  function hideHint() { $('#hint').classList.add('off'); }
+
+  function openPerson(id, from) {
+    const p = byId(id); if (!p) return;
+    closeOverlay(true);
+    hideHint();
+    p.unread = false; paint(p);
+    $('#cardWords').textContent = p.msg ? p.msg : p.lastKind === 'ghost' ? 'You noticed each other from a distance. Only you know.' : 'No words this time. You simply crossed paths.';
+    const when = p.last ? (p.last.day === 'today' ? 'today at ' + p.last.t : 'on ' + p.last.day) : 'today';
+    $('#cardMeta').textContent = `Met ${p.count} ${p.count === 1 ? 'time' : 'times'} · last ${when}${p.lastKind === 'connect' ? ' · you were both open' : ''}`;
+    open($('#card'), from || p.el);
+    p.sel = true; p.el.classList.add('sel');
+  }
+
+  /* ----- timeline + reflection ----- */
+  const KIND = { connect: 'Connect moment', pass: 'Crossed paths', ghost: 'Noticed in ghost mode' };
+  function renderTimeline() {
+    const body = $('#tlBody'); body.textContent = '';
+    const groups = [['today', 'Today'], ['Tue', 'Tuesday'], ['Mon', 'Monday']];
+    for (const [key, label] of groups) {
+      const list = events.filter(e => e.day === key); if (!list.length) continue;
+      const h = document.createElement('p'); h.className = 'sub'; h.textContent = label;
+      const ul = document.createElement('ul'); ul.className = 'tl';
+      for (const e of list) {
+        const p = byId(e.pid); if (!p) continue;
+        const li = document.createElement('li'), btn = document.createElement('button');
+        btn.type = 'button';
+        const tm = document.createElement('time'); tm.textContent = e.t;
+        const dot = document.createElement('i'); if (e.kind !== 'connect') dot.className = e.kind;
+        const tx = document.createElement('span'), ttl = document.createElement('b'), sub = document.createElement('span');
+        ttl.textContent = KIND[e.kind];
+        sub.textContent = e.got && p.msg ? `“${p.msg}”` : e.kind === 'connect' ? 'You were both open.' : e.kind === 'ghost' ? 'Only you know.' : 'No signal, quietly noted.';
+        if (e.sent) sub.textContent += ' Your words went along.';
+        tx.append(ttl, sub); btn.append(tm, dot, tx);
+        btn.addEventListener('click', () => openPerson(p.id, $('#menuBtn')));
+        li.appendChild(btn); ul.appendChild(li);
+      }
+      body.append(h, ul);
+    }
+  }
+  function today() {
+    const ev = events.filter(e => e.day === 'today');
+    const ids = [...new Set(ev.map(e => e.pid))];
+    const ps = ids.map(byId).filter(Boolean);
+    return { ev, ps, fresh: ps.filter(p => p.isNew).length, connects: ev.filter(e => e.kind === 'connect').length, words: ev.filter(e => e.got).length, most: ps.reduce((m, p) => Math.max(m, p.count), 0) };
+  }
+  function renderReflect() {
+    const t = today();
+    $('#rfLead').textContent = `You crossed paths with ${t.ps.length} ${t.ps.length === 1 ? 'person' : 'people'} today.`;
+    const dots = $('#rfDots'); dots.textContent = '';
+    t.ps.forEach(p => { const i = document.createElement('i'); const d = 12 + Math.min(p.count, 7) * 5; i.style.cssText = `width:${d}px;height:${d}px`; dots.appendChild(i); });
+    const li = [];
+    li.push(`<b>${t.fresh}</b> ${t.fresh === 1 ? 'was' : 'were'} new to you.`);
+    li.push(`<b>${t.connects}</b> ${t.connects === 1 ? 'time' : 'times'} you were both open at the same moment.`);
+    li.push(`<b>${t.words}</b> ${t.words === 1 ? 'person' : 'people'} left you a few words.`);
+    if (t.most >= 3) li.push(`One of them you have now met <b>${t.most}</b> times.`);
+    $('#rfList').innerHTML = li.map(x => `<li>${x}</li>`).join('');
+  }
+
+  /* ----- encounters ----- */
+  function spot() {
+    const r0 = radius(1);
+    let best = null, bs = 1e9;
+    for (let i = 0; i < 90; i++) {
+      const a = Math.random() * Math.PI * 2, rho = rnd(CORE + r0 + 12, 230);
+      let x = CX + Math.cos(a) * rho, y = CY + Math.sin(a) * rho * 1.1;
+      x = Math.max(24, Math.min(366, x)); y = Math.max(160, Math.min(660, y));
+      if (Math.hypot(x - CX, y - CY) < CORE + r0 + 10) continue;
+      let gap = 1e9;
+      for (const p of people) { const d = Math.hypot(x - p.x, y - p.y) - radius(p.count) - r0; if (d < gap) gap = d; }
+      if (gap < 3) continue;
+      const score = Math.abs(gap - 9);
+      if (score < bs) { bs = score; best = { x, y }; }
+    }
+    return best || { x: CX, y: 190 };
+  }
+  function meet(them) {
+    const mine = me.state;
+    let kind = 'pass', signal = false, get = false, send = false;
+    if (them === 'ghost') return;                                   // invisible to you: nothing is recorded
+    if (mine === 'ghost') kind = 'ghost';                           // only you notice
+    else if (mine === 'active' && them === 'active') { kind = 'connect'; signal = get = send = true; }
+    else if (mine === 'active') send = true;
+    else if (them === 'active') get = true;
+
+    clock = Math.min(1439, clock + Math.round(rnd(2, 7)));
+    let p, fresh = false;
+    if (people.length >= 24 || Math.random() < .45) p = pick(people);
+    else { const s = spot(); p = person(s.x, s.y, 0, '', true); people.push(p); fresh = true; }
+    p.count++; p.last = { day: 'today', t: fmt(clock) }; p.lastKind = kind;
+    let got = false;
+    if (get && (p.msg || Math.random() < .6)) { if (!p.msg || Math.random() < .3) p.msg = pick(POOL); got = true; p.unread = true; }
+    events.unshift({ day: 'today', min: clock, t: fmt(clock), pid: p.id, kind, got, sent: send && !!me.message });
+    if (fresh) mk(p, true); else { paint(p); p.v += 2.2; }
+    if (signal) {
+      const r = document.createElement('span'); r.className = 'ripple';
+      r.addEventListener('animationend', () => r.remove()); screen.appendChild(r);
+      lightPulse();
+      schedulePush(p.id, fmt(clock));
+    }
+    if (openEl === $('#sheetTimeline')) renderTimeline();
+    if (openEl === $('#sheetReflect')) renderReflect();
+  }
+  function schedulePush(pid, t) {
+    clearTimeout(pushTimer);
+    const fire = () => {
+      if (openEl || !$('#composer').hidden) { pushTimer = setTimeout(fire, 4000); return; }
+      const p = byId(pid); if (!p) return;
+      const el = $('#push'); el.dataset.pid = pid; el.tabIndex = 0;
+      $('#pushText').textContent = `At ${t}, someone was open at the same time as you.`;
+      el.classList.add('on');
+      pushTimer = setTimeout(hidePush, 6500);
+    };
+    pushTimer = setTimeout(fire, 7000);
+  }
+  function hidePush() { const el = $('#push'); el.classList.remove('on'); el.tabIndex = -1; }
+  function walk() {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => {
+      if (!document.hidden) { const r = Math.random(); meet(r < .45 ? 'active' : r < .8 ? 'passive' : 'ghost'); }
+      walk();
+    }, rnd(6000, 10000));
+  }
+
+  /* ----- message ----- */
+  function showChip() {
+    const c = $('#mychip'); c.hidden = !me.message; c.textContent = me.message;
+    c.setAttribute('aria-label', 'Your message: ' + me.message + '. Tap to edit.');
+  }
+  function openComposer() {
+    hideHint(); hidePush();
+    $('#compose').hidden = true; $('#mychip').hidden = true; $('#composer').hidden = false;
+    const i = $('#msg'); i.value = me.message; i.focus({ preventScroll: true }); i.select();
+  }
+  function closeComposer(save) {
+    if ($('#composer').hidden) return;
+    if (save) me.message = $('#msg').value.trim();
+    $('#composer').hidden = true; $('#compose').hidden = false; showChip();
+    if (save) toast(me.message ? 'Your words will travel with you' : 'Message removed');
+  }
+
+  /* ----- wiring ----- */
+  meEl.addEventListener('click', () => { hideHint(); nextState(); });
+  $('#compose').addEventListener('click', openComposer);
+  $('#mychip').addEventListener('click', openComposer);
+  $('#composer').addEventListener('submit', e => { e.preventDefault(); closeComposer(true); $('#compose').focus({ preventScroll: true }); });
+  $('#msg').addEventListener('keydown', e => { if (e.key === 'Escape') { closeComposer(false); $('#compose').focus({ preventScroll: true }); } });
+  $('#msg').addEventListener('blur', () => setTimeout(() => { if (!$('#composer').contains(document.activeElement)) closeComposer(false); }, 120));
+  const menu = $('#menu'), menuBtn = $('#menuBtn'), menuItems = $('#menuItems');
+  let menuTimer = 0;
+  const menuOpen = () => menu.classList.contains('open');
+  function armMenu() {
+    clearTimeout(menuTimer);
+    menuTimer = setTimeout(() => { if (menu.matches(':hover') || menu.querySelector(':focus-visible')) armMenu(); else closeMenu(); }, 5000);
+  }
+  function openMenu() {
+    menu.classList.add('open'); menuItems.inert = false; hideHint();
+    menuBtn.setAttribute('aria-expanded', 'true'); menuBtn.setAttribute('aria-label', 'Close menu'); armMenu();
+  }
+  function closeMenu() {
+    clearTimeout(menuTimer);
+    const had = menuItems.contains(document.activeElement);
+    menu.classList.remove('open'); menuItems.inert = true;
+    menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Open menu');
+    if (had) menuBtn.focus({ preventScroll: true });
+  }
+  menuBtn.addEventListener('click', () => { if (menuOpen()) closeMenu(); else openMenu(); });
+  menu.addEventListener('pointermove', () => { if (menuOpen()) armMenu(); });
+  menu.addEventListener('focusin', () => { if (menuOpen()) armMenu(); });
+
+  $('#smile').addEventListener('click', () => {
+    const t = today(), pill = $('#pill');
+    closeMenu();
+    pill.textContent = ''; pill.append(`You made ${t.fresh} new ${t.fresh === 1 ? 'connection' : 'connections'} today`);
+    const more = document.createElement('span'); more.textContent = '›'; more.setAttribute('aria-hidden', 'true'); pill.appendChild(more);
+    pill.hidden = false; $('#top').classList.add('summary'); hideHint();
+    pill.focus({ preventScroll: true });
+    clearTimeout(pillTimer); pillTimer = setTimeout(closePill, 4200);
+  });
+  function closePill() { clearTimeout(pillTimer); const had = document.activeElement === $('#pill'); $('#pill').hidden = true; $('#top').classList.remove('summary'); if (had) menuBtn.focus({ preventScroll: true }); }
+  $('#pill').addEventListener('click', () => { closePill(); renderReflect(); open($('#sheetReflect'), menuBtn); });
+  $('#openTimeline').addEventListener('click', () => { closeMenu(); renderTimeline(); open($('#sheetTimeline'), menuBtn); });
+  $('#openButton').addEventListener('click', () => { closeMenu(); open($('#sheetButton'), menuBtn); });
+  $('#dim').addEventListener('click', () => closeOverlay());
+  screen.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeOverlay()));
+  screen.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (openEl) { e.stopPropagation(); closeOverlay(); }
+    else if (menuOpen()) { closeMenu(); menuBtn.focus({ preventScroll: true }); }
+  });
+  $('#push').addEventListener('click', e => { const id = +e.currentTarget.dataset.pid; clearTimeout(pushTimer); hidePush(); openPerson(id, meEl); });
+  document.querySelectorAll('input[name="st"]').forEach(r => r.addEventListener('change', () => setState(r.value)));
+  document.querySelectorAll('input[name="lt"]').forEach(r => r.addEventListener('change', () => { me.light = r.value; lightPulse(); }));
+  document.querySelectorAll('input[name="lc"]').forEach(r => r.addEventListener('change', () => { document.documentElement.style.setProperty('--signal', r.value); lightPulse(); }));
+  document.querySelectorAll('input[name="df"]').forEach(r => r.addEventListener('change', () => { me.def = r.value; }));
+
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(screen);
+  window.addEventListener('resize', fit);
+  screen.addEventListener('scroll', () => { screen.scrollTop = 0; screen.scrollLeft = 0; });
+
+  seed(); renderAll(); fit(); showChip(); walk();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
