@@ -34,7 +34,7 @@ button, input { font: inherit; color: inherit; }
   .phone { width: auto; max-width: 100%; height: min(844px, calc(100vh - 48px)); height: min(844px, calc(100dvh - 48px)); aspect-ratio: 390 / 844; border-radius: 44px; box-shadow: 0 30px 70px rgba(10, 12, 18, .2); }
   .screen { border-radius: 44px; }
 }
-.screen { --u: 1; --ms: 1.06; --tint: #FCFCFC; --blob: var(--signal); --range: 360deg; position: relative; width: 100%; height: 100%; overflow: hidden; overflow: clip; background: var(--tint); color: var(--ink); color-scheme: light; transition: background .8s ease, --range .7s ease; isolation: isolate; }
+.screen { --inset: 44px; --u: 1; --ms: 1.06; --tint: #FCFCFC; --blob: var(--signal); --range: 360deg; position: relative; width: 100%; height: 100%; overflow: hidden; overflow: clip; background: var(--tint); color: var(--ink); color-scheme: light; transition: background .8s ease, --range .7s ease; isolation: isolate; }
 .screen[data-state="passive"] { --ms: 1; --range: 180deg; }
 .screen[data-state="ghost"] { --ms: .92; --tint: #EFEFF1; --blob: #70757F; --range: 0deg; }
 .screen :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
@@ -60,7 +60,7 @@ button, input { font: inherit; color: inherit; }
 
 .round { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--app-line); background: #FFFFFF; color: var(--ink); box-shadow: 0 4px 14px rgba(17, 19, 24, .08); display: grid; place-items: center; cursor: pointer; padding: 0; }
 .round svg, .compose svg, .composer svg, .x svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.top { position: absolute; left: 0; right: 0; top: 0; padding: 22px 20px 0; display: flex; justify-content: space-between; align-items: flex-start; z-index: 3; pointer-events: none; }
+.top { position: absolute; left: 0; right: 0; top: 0; padding: calc(22px + var(--inset)) 20px 0; display: flex; justify-content: space-between; align-items: flex-start; z-index: 3; pointer-events: none; }
 .top > * { pointer-events: auto; }
 .menu { margin-left: auto; display: flex; align-items: center; gap: 10px; pointer-events: none; }
 .menu > * { pointer-events: auto; }
@@ -77,9 +77,9 @@ button, input { font: inherit; color: inherit; }
 .pill { min-height: 46px; padding: 0 16px 0 20px; border-radius: 23px; border: 0; background: var(--ink); color: #FFFFFF; font-family: var(--display); font-size: 15px; font-weight: 600; white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; animation: pillin .35s ease both; }
 .pill span { opacity: .7; }
 @keyframes pillin { from { opacity: 0; translate: -8px 0; } }
-.toast { position: absolute; left: 50%; top: 84px; translate: -50% 0; max-width: calc(100% - 40px); padding: 9px 16px; border-radius: 20px; background: var(--ink); color: #FFFFFF; font-size: 14px; font-weight: 500; white-space: nowrap; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .3s, translate .3s; }
+.toast { position: absolute; left: 50%; top: calc(84px + var(--inset)); translate: -50% 0; max-width: calc(100% - 40px); padding: 9px 16px; border-radius: 20px; background: var(--ink); color: #FFFFFF; font-size: 14px; font-weight: 500; white-space: nowrap; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .3s, translate .3s; }
 .toast.on { opacity: 1; translate: -50% 4px; }
-.push { position: absolute; left: 14px; right: 14px; top: 14px; padding: 14px 16px; border-radius: 22px; border: 0; text-align: left; background: #FFFFFF; color: var(--ink); box-shadow: 0 10px 30px rgba(17, 19, 24, .2); display: flex; gap: 12px; align-items: center; cursor: pointer; z-index: 6; translate: 0 -140%; transition: translate .5s cubic-bezier(.3, 1.2, .5, 1); font-size: 14px; line-height: 1.35; }
+.push { position: absolute; left: 14px; right: 14px; top: calc(14px + var(--inset)); padding: 14px 16px; border-radius: 22px; border: 0; text-align: left; background: #FFFFFF; color: var(--ink); box-shadow: 0 10px 30px rgba(17, 19, 24, .2); display: flex; gap: 12px; align-items: center; cursor: pointer; z-index: 6; translate: 0 calc(-100% - 40px - var(--inset)); transition: translate .5s cubic-bezier(.3, 1.2, .5, 1); font-size: 14px; line-height: 1.35; }
 .push.on { translate: 0 0; }
 .push i { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--signal); }
 .push b { display: block; font-family: var(--display); font-weight: 700; color: var(--ink); }
@@ -628,6 +628,9 @@ button, input { font: inherit; color: inherit; }
   if ('ResizeObserver' in window) new ResizeObserver(fit).observe(screen);
   window.addEventListener('resize', fit);
   screen.addEventListener('scroll', () => { screen.scrollTop = 0; screen.scrollLeft = 0; });
+
+  const inset = new URLSearchParams(location.search).get('inset');
+  if (inset !== null && inset !== '' && !isNaN(+inset)) screen.style.setProperty('--inset', +inset + 'px');
 
   seed(); renderAll(); fit(); showChip(); walk();
   requestAnimationFrame(frame);
